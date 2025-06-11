@@ -1,0 +1,15 @@
+{
+  "Name": "Филип",
+  "Email": "lip@example.com",
+  "Login": "root",
+  "Password": "root"
+}
+
+{  
+  "Login": "root",
+  "Password": "root"
+}
+
+docker exec -i 7d52381a21ea psql -U postgres -c "CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(86) NOT NULL UNIQUE, login VARCHAR(86) NOT NULL UNIQUE, password TEXT NOT NULL, verified BOOLEAN NOT NULL DEFAULT FALSE, registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+
+docker exec -i 7d52381a21ea psql -U postgres -c "CREATE TABLE verification_codes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, code VARCHAR(16) NOT NULL, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"

@@ -1,0 +1,24 @@
+server:
+  port: "8081"
+  timeout : 30s
+  read_timeout: 15s
+  write_timeout: 15s
+  max_header_megabytes: 1
+
+
+logging:
+  level: "local"
+
+database:
+  timeout: 15s
+  conn_timeout: 10s
+  conn_max_idle_time: 10m
+  max_open_conns: 100
+  conn_max_lifetime: 1h
+
+email:
+  expires_at: 10m
+
+session:
+  expires_at: 24h
+
