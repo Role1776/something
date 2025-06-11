@@ -3,8 +3,10 @@ package repository
 type Lists interface {
 }
 
-type listsRepo struct{}
+type listsRepo struct {
+	db Querier
+}
 
-func newListsRepo() *listsRepo {
-	return &listsRepo{}
+func NewListsRepo(db Querier) *listsRepo {
+	return &listsRepo{db: db}
 }

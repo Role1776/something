@@ -40,7 +40,7 @@ func (h *handler) signUp(c *gin.Context) {
 	err := h.service.Auth.SignUp(c.Request.Context(), &authData)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserExists) {
-			newHTTPError(c, http.StatusConflict, "user already exists")
+			c.JSON(http.StatusOK, gin.H{"message": "Confirmation email has been sent"})
 			return
 		}
 		newHTTPError(c, http.StatusInternalServerError, "failed to create user")
@@ -58,7 +58,7 @@ func (h *handler) verify(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Auth.Verify(c.Request.Context(), code.Code); err != nil {
+	if err := h.service.Auth.VerifyUser(c.Request.Context(), code.Code); err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			newHTTPError(c, http.StatusNotFound, "invalid response")
 			return

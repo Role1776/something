@@ -38,8 +38,8 @@ func NewApp(cfg *config.Config, log *slog.Logger) (*App, error) {
 	}
 	jwt := jwt.NewJWT()
 
-	repo := repository.NewRepository(db)
-	service := service.NewService(repo, log, cfg, sender, jwt)
+	tm := service.NewTransactionManager(db)
+	service := service.NewService(db, tm, log, cfg, sender, jwt)
 	handler := handler.NewHandler(service, jwt)
 	router := handler.HandlerRegistrator()
 

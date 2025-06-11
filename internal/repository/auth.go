@@ -20,23 +20,25 @@ const userExistsError = "SQLSTATE 23505"
 type Auth interface {
 	GetByLoginAndPassword(ctx context.Context, authData *models.SecondAuth) (int, bool, error)
 	CreateUser(ctx context.Context, authData *models.FirstAuth) (int, error)
-	Verify(ctx context.Context, code string) error
-	CreateVerificationCode(ctx context.Context, userID int, code string, expiresAt time.Time) error
+	GetUserIDByVerificationCode(ctx context.Context, code string) (int, error)
+	SetUserVerified(ctx context.Context, userID int) error
+	DeleteVerificationCode(ctx context.Context, code string) error
+	UpsertVerificationCode(ctx context.Context, userID int, code string, expiresAt time.Time) error
 	GetRefreshTokenData(ctx context.Context, refreshToken string) (models.RefreshTokenData, error)
 	CreateOrUpdateRefreshToken(ctx context.Context, userID int, deviceID string, refreshToken string, expiresAt time.Time) error
 	DeleteRefreshToken(ctx context.Context, refreshToken string) error
 	GetUserByEmail(ctx context.Context, email string) (int, bool, error)
 }
 
-type authRepo struct {
-	db *sql.DB
+type AuthRepo struct {
+	db Querier
 }
 
-func newAuthRepo(db *sql.DB) *authRepo {
-	return &authRepo{db: db}
+func NewAuthRepo(db Querier) *AuthRepo {
+	return &AuthRepo{db: db}
 }
 
-func (r *authRepo) GetByLoginAndPassword(ctx context.Context, authData *models.SecondAuth) (id int, verified bool, err error) {
+func (r *AuthRepo) GetByLoginAndPassword(ctx context.Context, authData *models.SecondAuth) (id int, verified bool, err error) {
 	const op = "repository.SignIn"
 	const query = `
     SELECT id, verified FROM users WHERE login = $1 AND password = $2;
@@ -52,19 +54,14 @@ func (r *authRepo) GetByLoginAndPassword(ctx context.Context, authData *models.S
 	return id, verified, nil
 }
 
-func (r *authRepo) CreateUser(ctx context.Context, authData *models.FirstAuth) (int, error) {
+func (r *AuthRepo) CreateUser(ctx context.Context, authData *models.FirstAuth) (int, error) {
 	const op = "repository.SignUp"
-	prepare, err := r.db.PrepareContext(ctx, `
+	const query = `
 		INSERT INTO users (email, login, password, verified)
 		VALUES ($1, $2, $3, $4) RETURNING id;
-	`)
-	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-	defer prepare.Close()
-
+	`
 	var id int
-	err = prepare.QueryRowContext(ctx, authData.Email, authData.Login, authData.Password, false).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, authData.Email, authData.Login, authData.Password, false).Scan(&id)
 	if err != nil {
 		if strings.Contains(err.Error(), userExistsError) {
 			return 0, fmt.Errorf("%s: %w", op, ErrUserExists)
@@ -75,11 +72,14 @@ func (r *authRepo) CreateUser(ctx context.Context, authData *models.FirstAuth) (
 	return id, nil
 }
 
-func (r *authRepo) CreateVerificationCode(ctx context.Context, userID int, code string, expiresAt time.Time) error {
-	const op = "repository.CreateVerificationCode"
+func (r *AuthRepo) UpsertVerificationCode(ctx context.Context, userID int, code string, expiresAt time.Time) error {
+	const op = "repository.UpsertVerificationCode"
 	const query = `
         INSERT INTO verification_codes (user_id, code, expires_at)
         VALUES ($1, $2, $3)
+        ON CONFLICT (user_id) DO UPDATE 
+        SET code = EXCLUDED.code, 
+            expires_at = EXCLUDED.expires_at
     `
 	_, err := r.db.ExecContext(ctx, query, userID, code, expiresAt)
 	if err != nil {
@@ -88,44 +88,45 @@ func (r *authRepo) CreateVerificationCode(ctx context.Context, userID int, code 
 	return nil
 }
 
-func (r *authRepo) Verify(ctx context.Context, code string) error {
-	const op = "repository.Verify"
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	defer tx.Rollback()
-
+func (r *AuthRepo) GetUserIDByVerificationCode(ctx context.Context, code string) (int, error) {
+	const op = "repository.GetUserIDByVerificationCode"
 	var userID int
-	const selectQuery = `
+	const query = `
         SELECT user_id FROM verification_codes
         WHERE code = $1 AND expires_at > NOW()
-		FOR UPDATE;
+        FOR UPDATE;
     `
-	err = tx.QueryRowContext(ctx, selectQuery, code).Scan(&userID)
+	err := r.db.QueryRowContext(ctx, query, code).Scan(&userID)
 	if err != nil {
-		tx.Rollback()
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("%s: %w", op, ErrUserNotFound)
+			return 0, fmt.Errorf("%s: %w", op, ErrUserNotFound)
 		}
-		return fmt.Errorf("%s: %w", op, err)
+		return 0, fmt.Errorf("%s: %w", op, err)
 	}
-
-	const updateUser = `UPDATE users SET verified = true WHERE id = $1`
-	if _, err := tx.ExecContext(ctx, updateUser, userID); err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	const updateCode = `DELETE FROM verification_codes WHERE code = $1`
-	if _, err := tx.ExecContext(ctx, updateCode, code); err != nil {
-		tx.Rollback()
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return tx.Commit()
+	return userID, nil
 }
 
-func (r *authRepo) GetRefreshTokenData(ctx context.Context, refreshToken string) (models.RefreshTokenData, error) {
+func (r *AuthRepo) SetUserVerified(ctx context.Context, userID int) error {
+	const op = "repository.SetUserVerified"
+	const query = `UPDATE users SET verified = true WHERE id = $1`
+	_, err := r.db.ExecContext(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+func (r *AuthRepo) DeleteVerificationCode(ctx context.Context, code string) error {
+	const op = "repository.DeleteVerificationCode"
+	const query = `DELETE FROM verification_codes WHERE code = $1`
+	_, err := r.db.ExecContext(ctx, query, code)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+func (r *AuthRepo) GetRefreshTokenData(ctx context.Context, refreshToken string) (models.RefreshTokenData, error) {
 	const op = "repository.GetRefreshTokenData"
 
 	const query = `
@@ -149,7 +150,7 @@ func (r *authRepo) GetRefreshTokenData(ctx context.Context, refreshToken string)
 	}, nil
 }
 
-func (r *authRepo) CreateOrUpdateRefreshToken(ctx context.Context, userID int, deviceID string, refreshToken string, expiresAt time.Time) error {
+func (r *AuthRepo) CreateOrUpdateRefreshToken(ctx context.Context, userID int, deviceID string, refreshToken string, expiresAt time.Time) error {
 	const op = "repository.CreateOrUpdateRefreshToken"
 
 	const query = `
@@ -169,7 +170,7 @@ func (r *authRepo) CreateOrUpdateRefreshToken(ctx context.Context, userID int, d
 	return nil
 }
 
-func (r *authRepo) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
+func (r *AuthRepo) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
 	const op = "repository.DeleteRefreshToken"
 
 	const query = `
@@ -192,7 +193,7 @@ func (r *authRepo) DeleteRefreshToken(ctx context.Context, refreshToken string) 
 	return nil
 }
 
-func (r *authRepo) GetUserByEmail(ctx context.Context, email string) (int, bool, error) {
+func (r *AuthRepo) GetUserByEmail(ctx context.Context, email string) (int, bool, error) {
 	const op = "repository.GetUserByEmail"
 	const query = `
 		SELECT id, verified FROM users WHERE email = $1;

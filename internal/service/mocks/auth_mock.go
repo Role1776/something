@@ -99,16 +99,16 @@ func (mr *MockAuthServiceMockRecorder) SignUp(ctx, authData any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignUp", reflect.TypeOf((*MockAuthService)(nil).SignUp), ctx, authData)
 }
 
-// Verify mocks base method.
-func (m *MockAuthService) Verify(ctx context.Context, code string) error {
+// VerifyUser mocks base method.
+func (m *MockAuthService) VerifyUser(ctx context.Context, code string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", ctx, code)
+	ret := m.ctrl.Call(m, "VerifyUser", ctx, code)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Verify indicates an expected call of Verify.
-func (mr *MockAuthServiceMockRecorder) Verify(ctx, code any) *gomock.Call {
+// VerifyUser indicates an expected call of VerifyUser.
+func (mr *MockAuthServiceMockRecorder) VerifyUser(ctx, code any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockAuthService)(nil).Verify), ctx, code)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyUser", reflect.TypeOf((*MockAuthService)(nil).VerifyUser), ctx, code)
 }

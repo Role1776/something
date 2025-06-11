@@ -1,9 +1,9 @@
 package service
 
 import (
+	"database/sql"
 	"log/slog"
 	"todoai/internal/config"
-	"todoai/internal/repository"
 	"todoai/pkg/jwt"
 	"todoai/pkg/mail"
 )
@@ -13,9 +13,9 @@ type Service struct {
 	Lists ListsService
 }
 
-func NewService(repo *repository.Repository, log *slog.Logger, cfg *config.Config, sender mail.Sender, jwt jwt.JWT) *Service {
+func NewService(db *sql.DB, tm *TransactionManager, log *slog.Logger, cfg *config.Config, sender mail.Sender, jwt jwt.JWT) *Service {
 	return &Service{
-		Auth:  NewAuthService(repo.Auth, log, cfg, sender, jwt),
-		Lists: NewListsService(&repo.Lists),
+		Auth:  NewAuthService(tm, log, cfg, sender, jwt),
+		Lists: NewListsService(tm),
 	}
 }

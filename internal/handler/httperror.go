@@ -20,7 +20,7 @@ func newHTTPError(c *gin.Context, code int, message string) {
 		Code:    code,
 		Message: message,
 	})
-	c.AbortWithStatusJSON(code, gin.H{"error": message})
+	c.AbortWithStatus(code)
 }
 
 func (h *handler) errorHandler() gin.HandlerFunc {

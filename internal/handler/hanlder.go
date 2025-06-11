@@ -23,7 +23,7 @@ func (h *handler) HandlerRegistrator() *gin.Engine {
 	{
 		auth.POST("/sign-in", h.signIn)
 		auth.POST("/sign-up", h.signUp)
-		auth.POST("/verify/:code", h.verify)
+		auth.POST("/verify", h.verify)
 		auth.POST("/refresh", h.refreshToken)
 		auth.POST("/logout", h.logout)
 	}

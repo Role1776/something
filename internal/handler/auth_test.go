@@ -213,7 +213,7 @@ func TestHandler_verify(t *testing.T) {
 			inputBody: `{"code":"123456"}`,
 			code:      "123456",
 			mockBehavior: func(s *mocks.MockAuthService, code string) {
-				s.EXPECT().Verify(gomock.Any(), code).Return(nil)
+				s.EXPECT().VerifyUser(gomock.Any(), code).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody:   `{"message":"user verified successfully"}`,
@@ -232,7 +232,7 @@ func TestHandler_verify(t *testing.T) {
 			inputBody: `{"code":"123456"}`,
 			code:      "123456",
 			mockBehavior: func(s *mocks.MockAuthService, code string) {
-				s.EXPECT().Verify(gomock.Any(), code).Return(repository.ErrUserNotFound)
+				s.EXPECT().VerifyUser(gomock.Any(), code).Return(repository.ErrUserNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   `{"error":"invalid response"}`,
@@ -242,7 +242,7 @@ func TestHandler_verify(t *testing.T) {
 			inputBody: `{"code":"123456"}`,
 			code:      "123456",
 			mockBehavior: func(s *mocks.MockAuthService, code string) {
-				s.EXPECT().Verify(gomock.Any(), code).Return(errors.New("some error"))
+				s.EXPECT().VerifyUser(gomock.Any(), code).Return(errors.New("some error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   `{"error":"failed to verify user"}`,
