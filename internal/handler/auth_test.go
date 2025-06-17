@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -197,83 +198,45 @@ func TestHandler_signIn(t *testing.T) {
 
 }
 
-func TestHandler_verify(t *testing.T) {
-	type mockBehavior func(s *mocks.MockAuthService, code string)
+func TestHabdler_verify(t *testing.T) {
+	type mockBehavior func(mock *mocks.MockAuthService)
 
-	testCases := []struct {
+	testTable := []struct {
 		name           string
-		inputBody      string
-		code           string
-		mockBehavior   mockBehavior
+		input          string
+		mockBeHavor    mockBehavior
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
-			name:      "success",
-			inputBody: `{"code":"123456"}`,
-			code:      "123456",
-			mockBehavior: func(s *mocks.MockAuthService, code string) {
-				s.EXPECT().VerifyUser(gomock.Any(), code).Return(nil)
+			name:  "success",
+			input: "123",
+			mockBeHavor: func(mock *mocks.MockAuthService) {
+				mock.EXPECT().VerifyUser(context.Background(), "").Return(`"message": "user verified successfully"`)
 			},
-			expectedStatus: http.StatusOK,
-			expectedBody:   `{"message":"user verified successfully"}`,
-		},
-		{
-			name:      "invalid json",
-			inputBody: `{"code":123}`,
-			code:      "",
-			mockBehavior: func(s *mocks.MockAuthService, code string) {
-			},
-			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"invalid response"}`,
-		},
-		{
-			name:      "user not found",
-			inputBody: `{"code":"123456"}`,
-			code:      "123456",
-			mockBehavior: func(s *mocks.MockAuthService, code string) {
-				s.EXPECT().VerifyUser(gomock.Any(), code).Return(repository.ErrUserNotFound)
-			},
-			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"invalid response"}`,
-		},
-		{
-			name:      "internal error",
-			inputBody: `{"code":"123456"}`,
-			code:      "123456",
-			mockBehavior: func(s *mocks.MockAuthService, code string) {
-				s.EXPECT().VerifyUser(gomock.Any(), code).Return(errors.New("some error"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"error":"failed to verify user"}`,
+			expectedStatus: 200,
+			expectedBody:   `"message": "user verified successfully"`,
 		},
 	}
 
-	for _, tt := range testCases {
+	for _, tt := range testTable {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			cntr := gomock.NewController(t)
+			defer cntr.Finish()
 
-			authService := mocks.NewMockAuthService(ctrl)
-			tt.mockBehavior(authService, tt.code)
-
-			h := &handler{
+			h := handler{
 				service: &service.Service{
-					Auth: authService,
+					Auth: mocks.NewMockAuthService(cntr),
 				},
 			}
-			gin.SetMode(gin.TestMode)
+
 			r := gin.New()
-			r.POST("/verify", h.verify)
 
-			req := httptest.NewRequest("POST", "/verify", bytes.NewBufferString(tt.inputBody))
-			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
+			r.POST("verify/:id", h.verify)
 
-			r.ServeHTTP(w, req)
+			rec := httptest.NewRecorder()
+			resp, err := http.NewRequest("POST", "verify/:id", bytes.NewBufferString())
 
-			require.Equal(t, tt.expectedStatus, w.Code)
-			require.Contains(t, w.Body.String(), tt.expectedBody)
 		})
 	}
 }

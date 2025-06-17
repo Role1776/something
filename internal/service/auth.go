@@ -53,6 +53,7 @@ func (a *authService) SignIn(ctx context.Context, authData *models.SecondAuth) (
 
 	ctx, cancel := a.newRequestContext(ctx)
 	defer cancel()
+
 	repo := a.tm.NewAuthRepo()
 	authData.Password = hash.PasswordHash(authData.Password)
 	id, verified, err := repo.GetByLoginAndPassword(ctx, authData)
