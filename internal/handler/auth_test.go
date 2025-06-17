@@ -2,16 +2,15 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"todoai/internal/models"
 	"todoai/internal/repository"
 	"todoai/internal/service"
 	"todoai/internal/service/mocks"
-
-	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -44,7 +43,7 @@ func TestHandler_signUp(t *testing.T) {
 			expectedBody:   `{"message":"user created successfully"}`,
 		},
 		{
-			name: "user exists",
+			name: "confirmation email has been sent",
 			user: models.FirstAuth{
 				Email:    "lip@example.com",
 				Login:    "root",
@@ -54,8 +53,8 @@ func TestHandler_signUp(t *testing.T) {
 			mockBehavior: func(s *mocks.MockAuthService, user models.FirstAuth) {
 				s.EXPECT().SignUp(gomock.Any(), gomock.Eq(&user)).Return(repository.ErrUserExists)
 			},
-			expectedStatus: http.StatusConflict,
-			expectedBody:   `{"error":"user already exists"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"confirmation email has been sent"}`,
 		},
 		{
 			name:           "invalid response",
@@ -95,6 +94,7 @@ func TestHandler_signUp(t *testing.T) {
 				},
 			}
 			r := gin.New()
+			r.Use(h.errorHandler())
 			r.POST("/sign-up", h.signUp)
 
 			w := httptest.NewRecorder()
@@ -183,6 +183,7 @@ func TestHandler_signIn(t *testing.T) {
 			}
 			gin.SetMode(gin.TestMode)
 			r := gin.New()
+			r.Use(h.errorHandler())
 			r.POST("/sign-in", h.signIn)
 
 			req := httptest.NewRequest("POST", "/sign-in", bytes.NewBufferString(tt.input))
@@ -198,45 +199,71 @@ func TestHandler_signIn(t *testing.T) {
 
 }
 
-func TestHabdler_verify(t *testing.T) {
-	type mockBehavior func(mock *mocks.MockAuthService)
+func TestHandler_verify(t *testing.T) {
+	type mockBehavior func(mock *mocks.MockAuthService, userID string)
 
 	testTable := []struct {
 		name           string
 		input          string
-		mockBeHavor    mockBehavior
+		mockBehavior   mockBehavior
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
 			name:  "success",
-			input: "123",
-			mockBeHavor: func(mock *mocks.MockAuthService) {
-				mock.EXPECT().VerifyUser(context.Background(), "").Return(`"message": "user verified successfully"`)
+			input: "123456",
+			mockBehavior: func(mock *mocks.MockAuthService, userID string) {
+				mock.EXPECT().VerifyUser(gomock.Any(), userID).Return(nil)
 			},
-			expectedStatus: 200,
-			expectedBody:   `"message": "user verified successfully"`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"user verified successfully"}`,
+		},
+		{
+			name:  "not found",
+			input: "123456",
+			mockBehavior: func(mock *mocks.MockAuthService, userID string) {
+				mock.EXPECT().VerifyUser(gomock.Any(), userID).Return(repository.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"invalid response"}`,
+		},
+		{
+			name:  "internal server error",
+			input: "123456",
+			mockBehavior: func(mock *mocks.MockAuthService, userID string) {
+				mock.EXPECT().VerifyUser(gomock.Any(), userID).Return(errors.New("failed to verify user"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"error":"failed to verify user"}`,
 		},
 	}
 
 	for _, tt := range testTable {
 		t.Run(tt.name, func(t *testing.T) {
-			cntr := gomock.NewController(t)
-			defer cntr.Finish()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			h := handler{
+			authServiceMock := mocks.NewMockAuthService(ctrl)
+			tt.mockBehavior(authServiceMock, tt.input)
+
+			h := &handler{
 				service: &service.Service{
-					Auth: mocks.NewMockAuthService(cntr),
+					Auth: authServiceMock,
 				},
 			}
-
+			gin.SetMode(gin.TestMode)
 			r := gin.New()
+			r.Use(h.errorHandler())
+			r.POST("/verify", h.verify)
 
-			r.POST("verify/:id", h.verify)
+			w := httptest.NewRecorder()
+			body := fmt.Sprintf(`{"code":"%s"}`, tt.input)
+			req := httptest.NewRequest("POST", "/verify", bytes.NewBufferString(body))
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
 
-			rec := httptest.NewRecorder()
-			resp, err := http.NewRequest("POST", "verify/:id", bytes.NewBufferString())
-
+			require.Equal(t, tt.expectedStatus, w.Code)
+			require.Contains(t, w.Body.String(), tt.expectedBody)
 		})
 	}
 }

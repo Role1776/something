@@ -40,7 +40,7 @@ func (h *handler) signUp(c *gin.Context) {
 	err := h.service.Auth.SignUp(c.Request.Context(), &authData)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserExists) {
-			c.JSON(http.StatusOK, gin.H{"message": "Confirmation email has been sent"})
+			c.JSON(http.StatusOK, gin.H{"message": "confirmation email has been sent"})
 			return
 		}
 		newHTTPError(c, http.StatusInternalServerError, "failed to create user")
@@ -54,13 +54,13 @@ func (h *handler) signUp(c *gin.Context) {
 func (h *handler) verify(c *gin.Context) {
 	var code models.VerificationCode
 	if err := c.ShouldBindJSON(&code); err != nil {
-		newHTTPError(c, http.StatusNotFound, "invalid response")
+		newHTTPError(c, http.StatusBadRequest, "invalid response")
 		return
 	}
 
 	if err := h.service.Auth.VerifyUser(c.Request.Context(), code.Code); err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
-			newHTTPError(c, http.StatusNotFound, "invalid response")
+			newHTTPError(c, http.StatusBadRequest, "invalid response")
 			return
 		}
 		newHTTPError(c, http.StatusInternalServerError, "failed to verify user")
