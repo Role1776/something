@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"todoai/internal/config"
+	"todoai/internal/gateway/ai"
 	"todoai/internal/handler"
 	"todoai/internal/repository"
 	"todoai/internal/server"
@@ -38,8 +39,14 @@ func NewApp(cfg *config.Config, log *slog.Logger) (*App, error) {
 	}
 	jwt := jwt.NewJWT()
 
+	aiClient, err := ai.NewClient(ctx, cfg.AI.Key)
+	if err != nil {
+		return nil, fmt.Errorf("create ai client: %w", err)
+	}
+
+	ai := ai.NewAI(cfg.AI.Model, aiClient)
 	tm := service.NewTransactionManager(db)
-	service := service.NewService(db, tm, log, cfg, sender, jwt)
+	service := service.NewService(db, tm, log, cfg, sender, jwt, ai)
 	handler := handler.NewHandler(service, jwt)
 	router := handler.HandlerRegistrator()
 

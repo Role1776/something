@@ -4,6 +4,7 @@ import (
 	"todoai/internal/service"
 	"todoai/pkg/jwt"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +19,11 @@ func NewHandler(service *service.Service, jwt jwt.JWT) *handler {
 
 func (h *handler) HandlerRegistrator() *gin.Engine {
 	r := gin.Default()
+
+	r.Use(gin.Recovery())
+	r.Use(cors.Default())
 	r.Use(h.errorHandler())
+
 	auth := r.Group("/auth")
 	{
 		auth.POST("/sign-in", h.signIn)
@@ -28,17 +33,22 @@ func (h *handler) HandlerRegistrator() *gin.Engine {
 		auth.POST("/logout", h.logout)
 	}
 
-	api := r.Group("/api", h.authMiddleware)
+	api := r.Group("/api")
 	{
-		lists := api.Group("/lists")
+		lists := api.Group("/lists", h.authMiddleware)
 		{
 			lists.GET("/get", h.getLists)
 			lists.GET("/get/:id", h.getListById)
 			lists.POST("/create", h.createList)
-			lists.PUT("/update", h.updateList)
-			lists.DELETE("/delete", h.deleteList)
+			lists.PATCH("/update/:id", h.updateList)
+			lists.DELETE("/delete/:id", h.deleteList)
 		}
 
+	}
+	upload := api.Group("/upload")
+	{
+		upload.POST("/file", h.uploadFile)
+		upload.POST("/text", h.uploadText)
 	}
 
 	return r

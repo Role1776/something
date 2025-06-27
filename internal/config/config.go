@@ -43,6 +43,23 @@ type Config struct {
 		Level string `yaml:"level"`
 	}
 
+	AI struct {
+		Key   string `env:"AI_KEY"`
+		Model string `yaml:"model"`
+	}
+
+	Summarizer struct {
+		ChunkSize    int     `yaml:"chunk_size"`
+		MaxLen       int     `yaml:"max_len"`
+		CompressTemp float32 `yaml:"compress_temp"`
+		FormatTemp   float32 `yaml:"format_temp"`
+	}
+
+	Book_instruction struct {
+		CompressorInstruction string `yaml:"compressor_instruction"`
+	}
+	FormatterInstruction string `yaml:"formatter_instruction"`
+
 	Email struct {
 		SMTPHost        string        `env:"SMTP_HOST"`
 		SMTPPassword    string        `env:"SMTP_PASSWORD"`

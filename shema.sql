@@ -24,3 +24,11 @@ CREATE TABLE refresh_tokens (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, device_id)
 );
+
+CREATE TABLE lists (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(64) NOT NULL, 
+    body TEXT NOT NULL, 
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+); 

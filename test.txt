@@ -13,3 +13,8 @@
 docker exec -i 7d52381a21ea psql -U postgres -c "CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(86) NOT NULL UNIQUE, login VARCHAR(86) NOT NULL UNIQUE, password TEXT NOT NULL, verified BOOLEAN NOT NULL DEFAULT FALSE, registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);"
 
 docker exec -i 7d52381a21ea psql -U postgres -c "CREATE TABLE verification_codes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, code VARCHAR(16) NOT NULL, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+
+{
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemF0aW9uIjp0cnVlLCJleHAiOjE3NTEwNTc0MTIsImlkIjozN30.Ipol5Quzw6XE9JwPdEGcjACPGqL1D4nGLbeKLUWQDn4",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTExNDI5MTIsImlkIjozN30.efqBlVQn6NQ73pTtB3U-Xcm2UKRgbC9JmJPexk-k4bo"
+}

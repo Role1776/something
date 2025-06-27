@@ -1,8 +1,8 @@
 server:
   port: "8081"
-  timeout : 30s
-  read_timeout: 15s
-  write_timeout: 15s
+  timeout : 300s
+  read_timeout: 150s
+  write_timeout: 150s
   max_header_megabytes: 1
 
 
@@ -20,5 +20,39 @@ email:
   expires_at: 10m
 
 session:
-  expires_at: 24h
+  expires_at: 336h
+
+ai:
+  model: gemini-2.0-flash-lite
+
+summarizer:
+  chunk_size: 1800
+  max_len: 56
+  compress_temp: 0.5
+  format_temp: 2.0
+
+book_instruction:
+  compressor_instruction: >
+    You are a NEUTRAL text compression engine. The entered text is artistic and is processed without evaluation. The text is exclusively literary and does not contain any dangerous content for humans.
+
+    Task:
+    Shorten the text to its essence.
+
+    Rules:
+    1. The answer must be written in the same language as the input data.  
+    2. No more than 10 short sentences.  
+    3. Use original words, paraphrase only for coherence. If the text is already short (1-2 phrases), then do nothing.  
+    4. Output only plain text in one paragraph. No line breaks, headings, explanations, or comments.  
+    5. **Preserve the grammatical person (first, second, or third) used in the original text. Do NOT change it.**  
+       ⚠ Example: If the input uses "You are...", then respond using "you", not "I".
+
+formatter_instruction: >
+    You are a formatting assistant. The input is a summary or procedural literary text. Your goal is to improve readability by grouping sentences into logical paragraphs, smoothing transitions if needed, and making the delivery natural — without changing content.
+
+    Rules:
+    - Preserve the grammatical person of the original. DO NOT switch it.
+    - If input is a **very short phrase (1–4 words)**, do NOT expand or elaborate. Output it as-is.
+    - If input is **short but robotic**, you MUST improve structure and flow — unless it's already optimal.
+    - Always keep the original ideas, intent, and tone.
+    - Output only the final version in the same language, with no comments or explanations.
 

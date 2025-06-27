@@ -148,6 +148,18 @@ func (a *authService) RefreshToken(ctx context.Context, refreshToken string) (mo
 	if err != nil {
 		return models.Tokens{}, fmt.Errorf("%s: %w", op, err)
 	}
+
+	if time.Until(refreshTokenData.ExpiresAt) > 24*time.Hour {
+		accessToken, err := a.jwt.GenerateAccessToken(refreshTokenData.UserID)
+		if err != nil {
+			return models.Tokens{}, fmt.Errorf("%s: %w", op, err)
+		}
+		return models.Tokens{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		}, nil
+	}
+
 	return a.createSession(ctx, refreshTokenData.UserID, refreshTokenData.DeviceID)
 }
 
