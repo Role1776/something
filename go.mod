@@ -3,6 +3,7 @@ module todoai
 go 1.24.1
 
 require (
+	baliance.com/gooxml v1.0.1 // indirect
 	cloud.google.com/go v0.115.0 // indirect
 	cloud.google.com/go/ai v0.8.0 // indirect
 	cloud.google.com/go/auth v0.16.2 // indirect

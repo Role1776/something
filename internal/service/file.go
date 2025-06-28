@@ -9,6 +9,7 @@ import (
 	"strings"
 	"todoai/internal/config"
 	"todoai/internal/gateway/ai"
+	"todoai/pkg/reader/docx"
 	"todoai/pkg/reader/pdf"
 )
 
@@ -48,11 +49,12 @@ func NewFileService(config *config.Config, log *slog.Logger, ai ai.AI) *file {
 	}
 
 	s.extractors = map[string]textExtractor{
-		".txt": s.extractFromPlainText,
-		".csv": s.extractFromPlainText,
-		".log": s.extractFromPlainText,
-		".md":  s.extractFromPlainText,
-		".pdf": s.extractFromPDF,
+		".txt":  s.extractFromPlainText,
+		".csv":  s.extractFromPlainText,
+		".log":  s.extractFromPlainText,
+		".md":   s.extractFromPlainText,
+		".pdf":  s.extractFromPDF,
+		".docx": s.extractFromDocx,
 	}
 
 	return s
@@ -108,9 +110,20 @@ func (s *file) extractFromPlainText(fileBytes []byte) (string, error) {
 }
 
 func (s *file) extractFromPDF(fileBytes []byte) (string, error) {
+	const op = "extractFromPDF"
 	text, err := pdf.ReadPDF(fileBytes)
 	if err != nil {
-		s.log.Error("extractFromPDF", "error", err)
+		s.log.Error(op, "error", err)
+		return "", err
+	}
+	return text, nil
+}
+
+func (s *file) extractFromDocx(fileBytes []byte) (string, error) {
+	const op = "extractFromDocx"
+	text, err := docx.ReadDocx(fileBytes)
+	if err != nil {
+		s.log.Error(op, "error", err)
 		return "", err
 	}
 	return text, nil

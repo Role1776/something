@@ -21,7 +21,10 @@ func ReadPDF(fileBytes []byte) (string, error) {
 		content := page.Content()
 
 		for _, text := range content.Text {
-			textBuilder.WriteString(text.S)
+			_, err := textBuilder.WriteString(text.S)
+			if err != nil {
+				return "", err
+			}
 		}
 
 	}
