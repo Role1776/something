@@ -55,10 +55,12 @@ type Config struct {
 		FormatTemp   float32 `yaml:"format_temp"`
 	}
 
-	Book_instruction struct {
-		CompressorInstruction string `yaml:"compressor_instruction"`
+	Instructions struct {
+		Book_instruction                    string `yaml:"book_instruction"`
+		Jurisprudence                       string `yaml:"jurisprudence_instruction"`
+		Formatter_book_instruction          string `yaml:"formatter_book_instruction"`
+		Formatter_jurisprudence_instruction string `yaml:"formatter_jurisprudence_instruction"`
 	}
-	FormatterInstruction string `yaml:"formatter_instruction"`
 
 	Email struct {
 		SMTPHost        string        `env:"SMTP_HOST"`
