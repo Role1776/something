@@ -133,13 +133,28 @@ func (s *file) getInstructions(mode string) (processingInstructions, error) {
 	switch mode {
 	case bookMode:
 		return processingInstructions{
-			CompressorInstruction: s.config.Instructions.Book_instruction,
-			FormatterInstruction:  s.config.Instructions.Formatter_book_instruction,
+			CompressorInstruction: s.config.Instructions.Book,
+			FormatterInstruction:  s.config.Instructions.Formatter_book,
 		}, nil
 	case jurisprudenceMode:
 		return processingInstructions{
 			CompressorInstruction: s.config.Instructions.Jurisprudence,
-			FormatterInstruction:  s.config.Instructions.Formatter_jurisprudence_instruction,
+			FormatterInstruction:  s.config.Instructions.Formatter_jurisprudence,
+		}, nil
+	case articleMode:
+		return processingInstructions{
+			CompressorInstruction: s.config.Instructions.Article,
+			FormatterInstruction:  s.config.Instructions.Formatter_article,
+		}, nil
+	case docMode:
+		return processingInstructions{
+			CompressorInstruction: s.config.Instructions.Doc,
+			FormatterInstruction:  s.config.Instructions.Formatter_doc,
+		}, nil
+	case defaultMode:
+		return processingInstructions{
+			CompressorInstruction: s.config.Instructions.Def,
+			FormatterInstruction:  s.config.Instructions.Formatter_def,
 		}, nil
 	default:
 		return processingInstructions{}, errors.New("unsupported mode")

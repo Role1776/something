@@ -56,10 +56,16 @@ type Config struct {
 	}
 
 	Instructions struct {
-		Book_instruction                    string `yaml:"book_instruction"`
-		Jurisprudence                       string `yaml:"jurisprudence_instruction"`
-		Formatter_book_instruction          string `yaml:"formatter_book_instruction"`
-		Formatter_jurisprudence_instruction string `yaml:"formatter_jurisprudence_instruction"`
+		Book                    string `yaml:"book_instruction"`
+		Jurisprudence           string `yaml:"jurisprudence_instruction"`
+		Article                 string `yaml:"article_instruction"`
+		Doc                     string `yaml:"doc_instruction"`
+		Def                     string `yaml:"default_instruction"`
+		Formatter_book          string `yaml:"formatter_book_instruction"`
+		Formatter_jurisprudence string `yaml:"formatter_jurisprudence_instruction"`
+		Formatter_article       string `yaml:"formatter_article_instruction"`
+		Formatter_doc           string `yaml:"formatter_doc_instruction"`
+		Formatter_def           string `yaml:"formatter_article_instruction"`
 	}
 
 	Email struct {
