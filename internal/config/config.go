@@ -65,7 +65,7 @@ type Config struct {
 		Formatter_jurisprudence string `yaml:"formatter_jurisprudence_instruction"`
 		Formatter_article       string `yaml:"formatter_article_instruction"`
 		Formatter_doc           string `yaml:"formatter_doc_instruction"`
-		Formatter_def           string `yaml:"formatter_article_instruction"`
+		Formatter_def           string `yaml:"formatter_def_instruction"`
 	}
 
 	Email struct {

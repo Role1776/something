@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App — Google Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- Глобальные стили и переменные --- */
+        :root {
+            --google-blue: #1a73e8;
+            --google-blue-hover: #1669c1;
+            --google-red: #d93025;
+            --google-green: #1e8e3e;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --primary-text-color: #202124;
+            --secondary-text-color: #5f6368;
+            --border-color: #dadce0;
+            --border-radius: 8px;
+            --shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--primary-text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            font-size: 16px;
+        }
+
+        /* --- Контейнеры и виды --- */
+        .view { display: none; width: 100%; max-width: 800px; margin: 2rem auto; padding: 1rem; }
+        .view.active { display: block; }
+
+        /* --- Формы аутентификации --- */
+        .auth-container {
+            background-color: var(--surface-color);
+            padding: 48px 40px 36px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            max-width: 450px;
+            margin: 4rem auto;
+            text-align: center;
+        }
+        .auth-container h1 { font-size: 24px; font-weight: 400; margin-bottom: 8px; }
+        .auth-container p { color: var(--secondary-text-color); margin-bottom: 24px; }
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        .form-group label { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.5rem; display: block; color: var(--secondary-text-color); }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            transition: border-color 0.2s ease;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--google-blue); box-shadow: 0 0 0 1px var(--google-blue); }
+        .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+        .link-button { background: none; border: none; color: var(--google-blue); font-weight: 500; cursor: pointer; padding: 8px; font-size: 0.9rem; }
+        .link-button:hover { background-color: rgba(26, 115, 232, 0.05); border-radius: 4px; }
+        .primary-button {
+            background-color: var(--google-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 24px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .primary-button:hover { background-color: var(--google-blue-hover); box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15); }
+        
+        /* --- Основное приложение --- */
+        #main-app-view header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 2rem; }
+        #main-app-view h1 { font-size: 22px; font-weight: 500; margin: 0; }
+        .nav-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); }
+        .nav-tab { padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--secondary-text-color); font-weight: 500; }
+        .nav-tab.active { color: var(--google-blue); border-bottom-color: var(--google-blue); }
+        .app-section { display: none; }
+        .app-section.active { display: block; }
+
+        /* --- Секция загрузки --- */
+        .upload-card, .result-card { background: var(--surface-color); padding: 2rem; border-radius: var(--border-radius); box-shadow: 0 1px 6px rgb(32 33 36 / 18%); margin-bottom: 2rem; }
+        .upload-card h2, .result-card h2 { font-weight: 500; font-size: 1.5rem; margin-top: 0; }
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        #result-text { width: 100%; min-height: 300px; margin-top: 1rem; padding: 1rem; font-size: 1rem; line-height: 1.6; border: 1px solid var(--border-color); border-radius: 6px; resize: vertical; background: #f8f9fa; color: var(--primary-text-color); font-family: 'Roboto Mono', monospace; }
+
+        /* --- Секция списков --- */
+        #lists-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+        .list-card { background: var(--surface-color); border-radius: var(--border-radius); border: 1px solid var(--border-color); padding: 1.5rem; transition: box-shadow 0.2s ease; cursor: pointer; }
+        .list-card:hover { box-shadow: var(--shadow); }
+        .list-card h3 { margin: 0 0 0.5rem 0; font-size: 1.2rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .list-card p { margin: 0; font-size: 0.9rem; color: var(--secondary-text-color); height: 60px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+        /* --- Секция детального просмотра/редактирования --- */
+        #detail-title { font-size: 2rem; font-weight: 500; margin-bottom: 1rem; }
+        #detail-body { width: 100%; min-height: 50vh; font-family: 'Roboto', sans-serif; font-size: 1.1rem; line-height: 1.7; border: none; padding: 1rem; border-radius: 4px; background-color: #f1f3f4; }
+        #detail-body:focus { outline: 2px solid var(--google-blue); }
+        .detail-actions { margin-top: 1.5rem; display: flex; gap: 1rem; }
+
+        /* --- Уведомления (Toast) --- */
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 4px; color: white; font-weight: 500; box-shadow: 0 4px 8px rgba(0,0,0,0.2); opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s, bottom 0.3s; z-index: 1000; }
+        #toast.show { opacity: 1; visibility: visible; bottom: 30px; }
+        #toast.success { background-color: var(--google-green); }
+        #toast.error { background-color: var(--google-red); }
+
+        /* --- Спиннер загрузки --- */
+        .loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.7); z-index: 9999; }
+        .spinner { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--google-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loader" class="loader"><div class="spinner"></div></div>
+    <div id="toast"></div>
+
+    <!-- VIEW: Login -->
+    <div id="login-view" class="view active">
+        <div class="auth-container">
+            <h1>Вход в аккаунт</h1>
+            <p>Используйте свой аккаунт</p>
+            <form id="login-form">
+                <div class="form-group"><input type="text" id="login-login" placeholder="Логин" required></div>
+                <div class="form-group"><input type="password" id="login-password" placeholder="Пароль" required></div>
+                <div class="form-actions">
+                    <button type="button" class="link-button" onclick="showView('signup-view')">Создать аккаунт</button>
+                    <button type="submit" class="primary-button">Войти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW: Sign Up -->
+    <div id="signup-view" class="view">
+        <div class="auth-container">
+            <h1>Создание аккаунта</h1>
+            <p>Заполните все поля для регистрации</p>
+            <form id="signup-form">
+                <div class="form-group"><input type="text" id="signup-login" placeholder="Логин (мин. 2 символа)" required minlength="2"></div>
+                <div class="form-group"><input type="email" id="signup-email" placeholder="Email" required></div>
+                <div class="form-group"><input type="password" id="signup-password" placeholder="Пароль (мин. 8 символов)" required minlength="8"></div>
+                <div class="form-actions">
+                    <button type="button" class="link-button" onclick="showView('login-view')">Уже есть аккаунт?</button>
+                    <button type="submit" class="primary-button">Далее</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW: Verify -->
+    <div id="verify-view" class="view">
+        <div class="auth-container">
+            <h1>Подтверждение Email</h1>
+            <p>Мы отправили код на <strong id="verify-email-display"></strong>. Введите его ниже.</p>
+            <form id="verify-form">
+                <div class="form-group"><input type="text" id="verify-code" placeholder="Код подтверждения" required minlength="6" maxlength="6"></div>
+                <div class="form-actions">
+                    <button type="button" class="link-button" id="resend-code-btn">Отправить код повторно</button>
+                    <button type="submit" class="primary-button">Подтвердить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW: Main Application -->
+    <div id="main-app-view" class="view">
+        <header>
+            <h1>Мои Заметки</h1>
+            <button id="logout-btn" class="link-button" style="color: var(--google-red);">Выйти</button>
+        </header>
+
+        <nav class="nav-tabs">
+            <div class="nav-tab active" data-target="upload-section">Загрузить</div>
+            <div class="nav-tab" data-target="lists-section">Все заметки</div>
+        </nav>
+
+        <!-- APP SECTION: Upload -->
+        <section id="upload-section" class="app-section active">
+            <div class="upload-card">
+                <h2>Загрузить и обработать</h2>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label for="upload-mode">Режим обработки</label>
+                        <select id="upload-mode" required>
+                            <option value="book">book</option>
+                            <option value="doc">doc</option>
+                            <option value="article">article</option>
+                            <option value="jurisprudence">jurisprudence</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="upload-file">Выберите файл для анализа</label>
+                        <input type="file" id="upload-file" required>
+                    </div>
+                    <button type="submit" class="primary-button">Обработать файл</button>
+                </form>
+            </div>
+            <div id="result-card" class="result-card" style="display: none;">
+                <div class="result-header">
+                    <h2>Результат обработки</h2>
+                    <button id="save-result-btn" class="primary-button">Сохранить как заметку</button>
+                </div>
+                <textarea id="result-text" readonly placeholder="Здесь появится результат..."></textarea>
+            </div>
+        </section>
+
+        <!-- APP SECTION: All Lists -->
+        <section id="lists-section" class="app-section">
+            <div id="lists-container"><!-- Карточки списков будут вставляться сюда --></div>
+        </section>
+
+        <!-- APP SECTION: List Detail/Edit -->
+        <section id="detail-section" class="app-section">
+            <button class="link-button" id="back-to-lists-btn">← Назад к списку</button>
+            <h2 id="detail-title"></h2>
+            <textarea id="detail-body"></textarea>
+            <div class="detail-actions">
+                <button id="update-list-btn" class="primary-button">Сохранить изменения</button>
+                <button id="delete-list-btn" class="link-button" style="color: var(--google-red);">Удалить заметку</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const API_BASE_URL = 'http://localhost:8081'; // <-- ПОРТ ИЗМЕНЕН
+        const REFRESH_INTERVAL = 14 * 60 * 1000; // 14 минут
+
+        // --- DOM ELEMENTS ---
+        const views = document.querySelectorAll('.view');
+        const loader = document.getElementById('loader');
+        const toast = document.getElementById('toast');
+        
+        // --- STATE ---
+        let state = {
+            accessToken: null,
+            refreshToken: null,
+            deviceID: null,
+            tokenRefreshInterval: null,
+            currentListId: null,
+            processedText: null,
+            processedTextTitle: null,
+            emailForVerification: null,
+        };
+
+        // --- CORE FUNCTIONS ---
+        function showLoader() { loader.style.display = 'block'; }
+        function hideLoader() { loader.style.display = 'none'; }
+
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `show ${type}`;
+            setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+        }
+
+        function showView(viewId) {
+            views.forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function showAppSection(sectionId) {
+            document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.nav-tab[data-target="${sectionId}"]`).classList.add('active');
+        }
+
+        // --- API HELPERS ---
+        async function apiRequest(endpoint, method, body = null, needsAuth = true) {
+            showLoader();
+            const headers = new Headers({ 'Content-Type': 'application/json' });
+
+            if (needsAuth) {
+                if (!state.accessToken) {
+                    console.error("No access token. Logging out.");
+                    logout();
+                    return;
+                }
+                headers.append('Authorization', `Bearer ${state.accessToken}`);
+            }
+
+            const config = { method, headers };
+            if (body) config.body = JSON.stringify(body);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                const responseText = await response.text();
+                
+                if (!response.ok) {
+                    let errorMsg = 'Произошла ошибка';
+                    try {
+                        const errorJson = JSON.parse(responseText);
+                        errorMsg = errorJson.message || errorMsg;
+                    } catch (e) {
+                        errorMsg = responseText || response.statusText;
+                    }
+                    throw new Error(errorMsg);
+                }
+                
+                return responseText ? JSON.parse(responseText) : null;
+            } catch (error) {
+                showToast(error.message, 'error');
+                console.error('API Request Error:', error);
+                throw error;
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        async function uploadRequest(endpoint, formData) {
+            showLoader();
+            const headers = new Headers();
+             if (state.accessToken) {
+                headers.append('Authorization', `Bearer ${state.accessToken}`);
+            }
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, { method: 'POST', body: formData, headers: headers });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                    throw new Error(errorData.message || 'Ошибка загрузки файла');
+                }
+                return await response.json();
+            } catch (error) {
+                showToast(error.message, 'error');
+                console.error('Upload Request Error:', error);
+                throw error;
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // --- AUTHENTICATION LOGIC ---
+        function storeTokens(tokens) {
+            state.accessToken = tokens.access_token;
+            state.refreshToken = tokens.refresh_token;
+            localStorage.setItem('refreshToken', state.refreshToken);
+        }
+
+        function setupTokenRefresh() {
+            if (state.tokenRefreshInterval) clearInterval(state.tokenRefreshInterval);
+            state.tokenRefreshInterval = setInterval(handleTokenRefresh, REFRESH_INTERVAL);
+        }
+
+        async function handleTokenRefresh() {
+    if (!state.refreshToken) {
+        console.log("No refresh token available.");
+        return false; // Нечего обновлять
+    }
+    console.log("Attempting to refresh token...");
+    try {
+        // Мы не используем apiRequest, чтобы избежать бесконечного цикла при ошибке
+        showLoader();
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: state.refreshToken })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to refresh token');
+        }
+
+        const tokens = await response.json();
+        storeTokens(tokens);
+        console.log("Token refreshed successfully.");
+        hideLoader();
+        return true; // Успех
+    } catch (error) {
+        console.error("Could not refresh token:", error.message);
+        hideLoader();
+        return false; // Неудача
+    }
+}
+
+        function loginSuccess(tokens) {
+            storeTokens(tokens);
+            setupTokenRefresh();
+            localStorage.removeItem('emailForVerification');
+            showView('main-app-view');
+            showAppSection('upload-section');
+        }
+
+        function logout() {
+            if (state.refreshToken) {
+                apiRequest('/auth/logout', 'POST', { refresh_token: state.refreshToken }, false).catch(e => console.error("Logout failed on server, but proceeding.", e));
+            }
+            
+            state.accessToken = null;
+            state.refreshToken = null;
+            localStorage.removeItem('refreshToken');
+            if (state.tokenRefreshInterval) {
+                clearInterval(state.tokenRefreshInterval);
+                state.tokenRefreshInterval = null;
+            }
+            showView('login-view');
+            showToast("Вы вышли из системы.");
+        }
+
+        // --- EVENT HANDLERS ---
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const login = document.getElementById('login-login').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const data = await apiRequest('/auth/sign-in', 'POST', { login, password, device_id: state.deviceID }, false);
+                loginSuccess(data);
+            } catch (error) { /* Handled by apiRequest */ }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const login = document.getElementById('signup-login').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            
+            state.emailForVerification = email;
+            localStorage.setItem('emailForVerification', email); // Save for persistence
+
+            try {
+                await apiRequest('/auth/sign-up', 'POST', { login, email, password }, false);
+                document.getElementById('verify-email-display').textContent = email;
+                showView('verify-view');
+                showToast("Аккаунт создан. Проверьте почту для кода верификации.");
+            } catch (error) { /* Handled */ }
+        });
+
+        document.getElementById('verify-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('verify-code').value;
+            try {
+                await apiRequest('/auth/verify', 'POST', { code }, false);
+                showToast("Email успешно подтвержден! Теперь войдите в аккаунт.");
+                localStorage.removeItem('emailForVerification');
+                showView('login-view');
+            } catch (error) { /* Handled */ }
+        });
+        
+        document.getElementById('resend-code-btn').addEventListener('click', async () => {
+            if (!state.emailForVerification) {
+                showToast("Не удалось определить email. Пожалуйста, начните регистрацию заново.", "error");
+                return;
+            }
+            try {
+                await apiRequest('/auth/resend-code', 'POST', { email: state.emailForVerification }, false);
+                showToast("Новый код отправлен на ваш email.");
+            } catch (error) { /* Handled */ }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', logout);
+
+        // --- APP LOGIC HANDLERS ---
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetSection = tab.getAttribute('data-target');
+                showAppSection(targetSection);
+                if (targetSection === 'lists-section') renderLists();
+            });
+        });
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('upload-file');
+            if (!fileInput.files.length) {
+                showToast("Пожалуйста, выберите файл", "error");
+                return;
+            }
+            const file = fileInput.files[0];
+            const mode = document.getElementById('upload-mode').value;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('mode', mode); // Добавлено поле mode
+            
+            try {
+                const data = await uploadRequest('/api/upload/file', formData);
+                state.processedText = data.text;
+                state.processedTextTitle = file.name.split('.').slice(0, -1).join('.') || "Новая заметка";
+                
+                document.getElementById('result-text').value = state.processedText;
+                document.getElementById('result-card').style.display = 'block';
+                showToast("Файл успешно обработан!", "success");
+            } catch (error) { /* Handled */ }
+        });
+
+        document.getElementById('save-result-btn').addEventListener('click', async () => {
+            if (!state.processedText) return;
+            try {
+                await apiRequest('/api/lists/create', 'POST', { title: state.processedTextTitle, body: state.processedText });
+                showToast("Заметка успешно сохранена!", "success");
+                state.processedText = null;
+                state.processedTextTitle = null;
+                document.getElementById('result-card').style.display = 'none';
+                document.getElementById('result-text').value = '';
+                document.getElementById('upload-form').reset();
+                
+                showAppSection('lists-section');
+                renderLists();
+            } catch (error) { /* Handled */ }
+        });
+
+        async function renderLists() {
+            try {
+                const lists = await apiRequest('/api/lists/get', 'GET') || [];
+                const container = document.getElementById('lists-container');
+                container.innerHTML = '';
+                if (lists.length > 0) {
+                    lists.forEach(list => {
+                        const card = document.createElement('div');
+                        card.className = 'list-card';
+                        card.dataset.id = list.id;
+                        card.innerHTML = `<h3>${list.title}</h3><p>${list.body}</p>`;
+                        card.addEventListener('click', () => showListDetail(list.id));
+                        container.appendChild(card);
+                    });
+                } else {
+                    container.innerHTML = '<p>У вас пока нет заметок. Создайте первую!</p>';
+                }
+            } catch (error) { /* Handled */ }
+        }
+
+        async function showListDetail(listId) {
+            try {
+                const list = await apiRequest(`/api/lists/get/${listId}`, 'GET');
+                state.currentListId = list.id;
+                document.getElementById('detail-title').textContent = list.title;
+                document.getElementById('detail-body').value = list.body;
+                showAppSection('detail-section');
+            } catch (error) { /* Handled */ }
+        }
+
+        document.getElementById('back-to-lists-btn').addEventListener('click', () => {
+            showAppSection('lists-section');
+            renderLists();
+        });
+
+        document.getElementById('update-list-btn').addEventListener('click', async () => {
+            const body = document.getElementById('detail-body').value;
+            try {
+                await apiRequest(`/api/lists/update/${state.currentListId}`, 'PATCH', { body });
+                showToast("Заметка обновлена!", "success");
+                showAppSection('lists-section');
+                renderLists();
+            } catch (error) { /* Handled */ }
+        });
+
+        document.getElementById('delete-list-btn').addEventListener('click', async () => {
+            if (confirm("Вы уверены, что хотите удалить эту заметку?")) {
+                try {
+                    await apiRequest(`/api/lists/delete/${state.currentListId}`, 'DELETE');
+                    showToast("Заметка удалена.", "success");
+                    showAppSection('lists-section');
+                    renderLists();
+                } catch (error) { /* Handled */ }
+            }
+        });
+
+        // --- INITIALIZATION ---
+       async function init() {
+    // 1. Получаем базовые данные
+    let deviceID = localStorage.getItem('deviceID');
+    if (!deviceID) {
+        deviceID = crypto.randomUUID();
+        localStorage.setItem('deviceID', deviceID);
+    }
+    state.deviceID = deviceID;
+    state.emailForVerification = localStorage.getItem('emailForVerification');
+    if (state.emailForVerification) {
+        document.getElementById('verify-email-display').textContent = state.emailForVerification;
+    }
+
+    // 2. Проверяем сессию
+    const savedRefreshToken = localStorage.getItem('refreshToken');
+    if (savedRefreshToken) {
+        state.refreshToken = savedRefreshToken;
+        
+        // 3. Пытаемся обновить токен. Это наш главный тест на валидность сессии.
+        const isRefreshSuccessful = await handleTokenRefresh();
+
+        if (isRefreshSuccessful) {
+            // Если токен успешно обновлен, значит сессия жива.
+            // Вызываем loginSuccess с НОВЫМИ токенами, которые уже в state.
+            loginSuccess({ access_token: state.accessToken, refresh_token: state.refreshToken });
+        } else {
+            // Если обновить не удалось, значит сессия истекла. Чистим и на логин.
+            console.log("Refresh failed. Clearing session and showing login page.");
+            localStorage.removeItem('refreshToken');
+            state.refreshToken = null;
+            state.accessToken = null;
+            showView('login-view');
+        }
+    } else {
+        // 4. Нет refresh токена - показываем страницу входа.
+        showView('login-view');
+    }
+}
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

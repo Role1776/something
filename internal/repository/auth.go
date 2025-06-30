@@ -73,7 +73,6 @@ func (r *AuthRepo) CreateUser(ctx context.Context, authData *models.FirstAuth) (
 }
 
 func (r *AuthRepo) UpsertVerificationCode(ctx context.Context, userID int, code string, expiresAt time.Time) error {
-	const op = "repository.UpsertVerificationCode"
 	const query = `
         INSERT INTO verification_codes (user_id, code, expires_at)
         VALUES ($1, $2, $3)
@@ -83,7 +82,7 @@ func (r *AuthRepo) UpsertVerificationCode(ctx context.Context, userID int, code 
     `
 	_, err := r.db.ExecContext(ctx, query, userID, code, expiresAt)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("repository.UpsertVerificationCode: %w", err)
 	}
 	return nil
 }

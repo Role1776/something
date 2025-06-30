@@ -15,6 +15,10 @@ type SecondAuth struct {
 	DeviceID string `json:"device_id" binding:"required"`
 }
 
+type Email struct {
+	Email string `json:"email" binding:"required,email,max=255"`
+}
+
 type Tokens struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`

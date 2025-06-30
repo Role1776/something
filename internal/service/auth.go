@@ -28,6 +28,7 @@ type AuthService interface {
 	VerifyUser(ctx context.Context, code string) error
 	RefreshToken(ctx context.Context, refreshToken string) (models.Tokens, error)
 	Logout(ctx context.Context, refreshToken string) error
+	ResendCode(ctx context.Context, email string) error
 }
 
 type authService struct {
@@ -99,14 +100,12 @@ func (a *authService) SignUp(ctx context.Context, authData *models.FirstAuth) er
 
 	if err != nil {
 		if errors.Is(err, repository.ErrUserExists) {
-			a.log.Warn("user already exists, re-triggering verification")
-			return a.handleExistingUser(ctx, authData)
+			return fmt.Errorf("failed to set user verified: %w", repository.ErrUserExists)
 		}
 		a.log.Error("transaction failed during sign up", "error", err)
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	a.log.Info("user and verification code created, sending email")
 	return a.sendVerification(verificationCode, authData.Email)
 }
 
@@ -120,7 +119,7 @@ func (a *authService) VerifyUser(ctx context.Context, code string) error {
 		}
 
 		if err := repo.Auth.SetUserVerified(ctx, userID); err != nil {
-			a.log.Error("failed to set user verified", "userID", userID, "error", err)
+			a.log.Error(op, "failed to set user verified: %w", err)
 			return fmt.Errorf("failed to set user verified: %w", err)
 		}
 		if err := repo.Auth.DeleteVerificationCode(ctx, code); err != nil {
@@ -134,8 +133,11 @@ func (a *authService) VerifyUser(ctx context.Context, code string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	a.log.Info("user successfully verified", "code", code)
 	return nil
+}
+
+func (a *authService) ResendCode(ctx context.Context, email string) error {
+	return a.handleExistingUser(ctx, email)
 }
 
 func (a *authService) RefreshToken(ctx context.Context, refreshToken string) (models.Tokens, error) {
@@ -221,7 +223,6 @@ func (a *authService) initiateVerification(ctx context.Context, repo repository.
 
 	expiresAt := time.Now().Add(a.cfg.Email.ExpiresAt)
 	if err := repo.UpsertVerificationCode(ctx, userID, code, expiresAt); err != nil {
-
 		return "", a.logAndWrapError(op, "failed to create verification code", err)
 	}
 	return code, nil
@@ -242,20 +243,20 @@ func (a *authService) sendVerification(code, email string) error {
 	return nil
 }
 
-func (a *authService) handleExistingUser(ctx context.Context, authData *models.FirstAuth) error {
+func (a *authService) handleExistingUser(ctx context.Context, email string) error {
 	const op = "service.handleExistingUser"
 
 	repo := a.tm.NewAuthRepo()
-	id, verified, err := repo.GetUserByEmail(ctx, authData.Email)
+	id, verified, err := repo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return fmt.Errorf("%s: failed to get existing user: %w", op, err)
+		return a.handleRepositoryError(op, err, repository.ErrUserNotFound)
 	}
 
 	if verified {
 		return repository.ErrUserExists
 	}
-	a.log.Info("re-triggering verification for unverified user", "userID", id)
-	return a.triggerVerification(ctx, id, authData.Email)
+
+	return a.triggerVerification(ctx, id, email)
 }
 
 func (a *authService) ValidateRefreshToken(ctx context.Context, refreshToken string) (*models.RefreshTokenData, error) {

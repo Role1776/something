@@ -69,6 +69,31 @@ func (h *handler) verify(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "user verified successfully"})
 }
 
+func (h *handler) resend_code(c *gin.Context) {
+	var email models.Email
+	if err := c.ShouldBindJSON(&email); err != nil {
+		newHTTPError(c, http.StatusBadRequest, "invalid response")
+		return
+	}
+
+	if err := h.service.Auth.ResendCode(c.Request.Context(), email.Email); err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			c.JSON(http.StatusOK, gin.H{"message": "if an account with this email exists, a verification code has been sent"})
+			return
+		}
+
+		if errors.Is(err, repository.ErrUserExists) {
+			newHTTPError(c, http.StatusConflict, "This account is already verified")
+			return
+		}
+
+		newHTTPError(c, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "if an account with this email exists, a verification code has been sent"})
+}
+
 func (h *handler) refreshToken(c *gin.Context) {
 	var refreshToken models.RefreshToken
 	if err := c.ShouldBindJSON(&refreshToken); err != nil {
