@@ -21,6 +21,7 @@ func (h *handler) HandlerRegistrator() *gin.Engine {
 	r := gin.Default()
 
 	r.Use(gin.Recovery())
+	r.Use(h.rateLimiter)
 	r.Use(cors.Default())
 	r.Use(h.errorHandler())
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"todoai/internal/models"
 	"todoai/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -35,7 +36,7 @@ func (h *handler) uploadFile(c *gin.Context) {
 		return
 	}
 
-	text, err := h.service.File.ProcessFile(c.Request.Context(), fileBytes, handler.Filename, mode)
+	text, err := h.service.Upload.ProcessFile(c.Request.Context(), fileBytes, handler.Filename, mode)
 	if err != nil {
 		if errors.Is(err, service.ErrFileTooLarge) {
 			newHTTPError(c, http.StatusBadRequest, service.ErrFileTooLarge.Error())
@@ -49,7 +50,28 @@ func (h *handler) uploadFile(c *gin.Context) {
 }
 
 func (h *handler) uploadText(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"text": "text uploaded successfully"})
+	var document models.Document
+	if err := c.ShouldBindJSON(&document); err != nil {
+		newHTTPError(c, http.StatusBadRequest, "invalid response")
+		return
+	}
+
+	if !isValidMode(document.Mode) {
+		newHTTPError(c, http.StatusBadRequest, "invalid mode")
+		return
+	}
+
+	text, err := h.service.Upload.ProcessText(c.Request.Context(), document.Text, document.Mode)
+	if err != nil {
+		if errors.Is(err, service.ErrFileTooLarge) {
+			newHTTPError(c, http.StatusBadRequest, service.ErrFileTooLarge.Error())
+			return
+		}
+		newHTTPError(c, http.StatusInternalServerError, "file upload text")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"text": text})
 }
 
 func isValidMode(mode string) bool {

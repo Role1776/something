@@ -25,8 +25,9 @@ var ErrFileTooLarge = errors.New("the file is too large")
 
 type textExtractor func(fileBytes []byte) (string, error)
 
-type File interface {
+type Upload interface {
 	ProcessFile(ctx context.Context, fileBytes []byte, filename string, mode string) (string, error)
+	ProcessText(ctx context.Context, text string, mode string) (string, error)
 }
 
 type file struct {
@@ -81,8 +82,18 @@ func (s *file) ProcessFile(ctx context.Context, fileBytes []byte, filename strin
 	return s.compress(ctx, text, instructions)
 }
 
+func (s *file) ProcessText(ctx context.Context, text string, mode string) (string, error) {
+	const op = "service.ProcessText"
+	instructions, err := s.getInstructions(mode)
+	if err != nil {
+		s.log.Error(op, "error", err)
+		return "", err
+	}
+	return s.compress(ctx, text, instructions)
+}
+
 func (s *file) compress(ctx context.Context, fileText string, instructions processingInstructions) (string, error) {
-	const op = "compress"
+	const op = "service.Compress"
 	chunks := s.spliter(fileText)
 	if len(chunks) > s.config.Summarizer.MaxLen {
 		return "", ErrFileTooLarge
@@ -110,7 +121,7 @@ func (s *file) extractFromPlainText(fileBytes []byte) (string, error) {
 }
 
 func (s *file) extractFromPDF(fileBytes []byte) (string, error) {
-	const op = "extractFromPDF"
+	const op = "sdervice.ExtractFromPDF"
 	text, err := pdf.ReadPDF(fileBytes)
 	if err != nil {
 		s.log.Error(op, "error", err)
@@ -120,7 +131,7 @@ func (s *file) extractFromPDF(fileBytes []byte) (string, error) {
 }
 
 func (s *file) extractFromDocx(fileBytes []byte) (string, error) {
-	const op = "extractFromDocx"
+	const op = "service.ExtractFromDocx"
 	text, err := docx.ReadDocx(fileBytes)
 	if err != nil {
 		s.log.Error(op, "error", err)
