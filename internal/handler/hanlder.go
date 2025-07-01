@@ -47,6 +47,7 @@ func (h *handler) HandlerRegistrator() *gin.Engine {
 		}
 
 	}
+
 	upload := api.Group("/upload")
 	{
 		upload.POST("/file", h.uploadFile)

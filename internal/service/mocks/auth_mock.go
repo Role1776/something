@@ -70,6 +70,20 @@ func (mr *MockAuthServiceMockRecorder) RefreshToken(ctx, refreshToken any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshToken", reflect.TypeOf((*MockAuthService)(nil).RefreshToken), ctx, refreshToken)
 }
 
+// ResendCode mocks base method.
+func (m *MockAuthService) ResendCode(ctx context.Context, email string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResendCode", ctx, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResendCode indicates an expected call of ResendCode.
+func (mr *MockAuthServiceMockRecorder) ResendCode(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResendCode", reflect.TypeOf((*MockAuthService)(nil).ResendCode), ctx, email)
+}
+
 // SignIn mocks base method.
 func (m *MockAuthService) SignIn(ctx context.Context, authData *models.SecondAuth) (models.Tokens, error) {
 	m.ctrl.T.Helper()
