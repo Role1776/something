@@ -3,8 +3,10 @@ package ai
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/google/generative-ai-go/genai"
+	"golang.org/x/time/rate"
 )
 
 type AI interface {
@@ -12,15 +14,28 @@ type AI interface {
 }
 
 type ai struct {
-	model  string
-	client *genai.Client
+	model   string
+	client  *genai.Client
+	limiter *rate.Limiter
+	log     *slog.Logger
 }
 
-func NewAI(model string, client *genai.Client) *ai {
-	return &ai{model: model, client: client}
+func NewAI(model string, client *genai.Client, limiter *rate.Limiter, log *slog.Logger) *ai {
+	return &ai{
+		model:   model,
+		client:  client,
+		limiter: limiter,
+		log:     log,
+	}
 }
 
 func (a *ai) Generate(ctx context.Context, prompt, instruction string, temp float32) (string, error) {
+	const op = "gateway.ai.Generate"
+	if err := a.limiter.Wait(ctx); err != nil {
+		a.log.Error(op, "error:", err)
+		return "", err
+	}
+
 	model := a.client.GenerativeModel(a.model)
 	model.SystemInstruction = &genai.Content{
 		Parts: []genai.Part{
@@ -31,6 +46,7 @@ func (a *ai) Generate(ctx context.Context, prompt, instruction string, temp floa
 
 	response, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
+		a.log.Error(op, "error:", err)
 		return "", err
 	}
 

@@ -2,13 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"log/slog"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"todoai/internal/app"
 	"todoai/internal/config"
 )
@@ -36,30 +32,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	errCh := make(chan error, 1)
-	go func() {
-		logger.Info("Server is listening", slog.String("port", cfg.Server.Port))
-		if err := app.Server.Run(); err != nil && err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("server run error: %w", err)
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
-	select {
-	case <-quit:
-		logger.Info("Shutting down server...")
-	case serverErr := <-errCh:
-		logger.Error("Server run failed", slog.Any("error", serverErr))
+	if err = app.Run(); err != nil {
+		logger.Error("App running failed")
+		os.Exit(1)
 	}
 
-	if err = app.Server.Stop(ctx); err != nil {
-		logger.Error("Server forced to shutdown", slog.Any("error", err))
-	}
-
-	if err := app.Close(); err != nil {
+	if err := app.Close(ctx); err != nil {
 		logger.Error("Error closing database connection", slog.Any("error", err.Error()))
+		os.Exit(1)
 	}
 
 	logger.Info("Server stopped gracefully")
